@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Assinatura Digital</title>
+    <style>
+        #canvas {
+            border: 1px solid #ccc;
+            width: 80%; /* Defina a largura do canvas em porcentagem */
+            height: 200px; /* Defina a altura fixa do canvas em 200 pixels */
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+<h1>Assine o documento</h1>
+<canvas id="canvas" width=1800" height="400"></canvas>
+<br>
+<button id="clearBtn">Limpar</button>
+<button id="saveBtn">Salvar Assinatura</button>
+
+<script>
+    window.addEventListener('load', function () {
+        var canvas = document.getElementById('canvas');
+        var context = canvas.getContext('2d');
+        var drawing = false;
+
+        function startDrawing(event) {
+            drawing = true;
+            var pos = getMousePos(event);
+            context.beginPath();
+            context.moveTo(pos.x, pos.y);
+        }
+
+        function draw(event) {
+            if (drawing) {
+                var pos = getMousePos(event);
+                context.lineTo(pos.x, pos.y);
+                context.lineWidth = 6; // Largura da caneta fixa em 2 pixels
+                context.lineCap = 'round'; // Extremidade da linha arredondada
+                context.lineJoin = 'round'; // Junção das linhas arredondada
+                context.stroke();
+            }
+        }
+
+        function stopDrawing() {
+            drawing = false;
+        }
+
+        function getMousePos(event) {
+            var rect = canvas.getBoundingClientRect();
+            var scaleX = canvas.width / rect.width;
+            var scaleY = canvas.height / rect.height;
+            var offsetX = event.clientX - rect.left;
+            var offsetY = event.clientY - rect.top;
+            var mousePosX = offsetX * scaleX;
+            var mousePosY = offsetY * scaleY;
+            return {
+                x: mousePosX,
+                y: mousePosY
+            };
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseleave', stopDrawing); // Parar de desenhar quando o mouse sai da área do canvas
+
+        canvas.addEventListener('touchstart', function (event) {
+            var touch = event.touches[0];
+            startDrawing(touch);
+        });
+
+        canvas.addEventListener('touchmove', function (event) {
+            var touch = event.touches[0];
+            draw(touch);
+            event.preventDefault();
+        });
+
+        canvas.addEventListener('touchend', stopDrawing);
+
+        document.getElementById('clearBtn').addEventListener('click', function () {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', function () {
+            var signatureData = canvas.toDataURL('image/png'); // Obtém a imagem da assinatura como um formato de dados
+
+            // Envia a imagem para o servidor usando AJAX
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'salvar_assinatura.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // Ação a ser executada após o envio bem-sucedido
+                    alert('Assinatura salva com sucesso!');
+                }
+            };
+            xhr.send('signature=' + encodeURIComponent(signatureData));
+        });
+    });
+</script>
+</body>
+</html>
